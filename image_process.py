@@ -1,6 +1,13 @@
 import numpy as np
 import cv2 as cv
+from advanced_lane_detection import draw_lanes_method3
 import time
+
+########################## Region-of-interest vertices###############################################
+trap_bottom_width = 0.85  # width of bottom edge of trapezoid, expressed as percentage of image width
+trap_top_width = 0.35  # ditto for top edge of trapezoid
+trap_height = 0.6 # height of the trapezoid expressed as percentage of image height
+########################## Region-of-interest vertices###############################################
 
 def roi(img, vertices):
     mask = np.zeros_like(img)
@@ -143,6 +150,7 @@ def draw_lanes_method2(image,lines,color,thickness):
 
 def process_image(raw_img,do_roi):
         processed_img = cv.resize(raw_img, (600, 480))
+        resized_image = processed_img
         # M = cv.getPerspectiveTransform(processed_img,dst)
         # unwarped = cv.warpPerspective(processed_img,M,(600,480),flags=cv.INTER_LINEAR)
         # cv.imshow('unwarped image',unwarped)
@@ -153,8 +161,20 @@ def process_image(raw_img,do_roi):
         #cv.imshow("1 after GaussianBlur", processed_img)
         processed_img = cv.Canny(processed_img, threshold1=150, threshold2=300)
         #cv.imshow("2 after Canny", processed_img)
-        lines = cv.HoughLinesP(processed_img, 1, np.pi / 180, 180, 20, 15)
-        #print(lines)
+
+        ###############do HoughP on roi image###########################
+        imshape = processed_img.shape
+        vertices = np.array([[ \
+            ((imshape[1] * (1 - trap_bottom_width)) // 2, imshape[0]), \
+            ((imshape[1] * (1 - trap_top_width)) // 2, imshape[0] - imshape[0] * trap_height), \
+            (imshape[1] - (imshape[1] * (1 - trap_top_width)) // 2, imshape[0] - imshape[0] * trap_height), \
+            (imshape[1] - (imshape[1] * (1 - trap_bottom_width)) // 2, imshape[0])]] \
+            , dtype=np.int32)
+        processed_img = roi(processed_img, vertices)
+        #cv.imshow('roi image',processed_img)
+
+        lines = cv.HoughLinesP(processed_img, 1, np.pi / 180, 180, 20, 30)
+        ################################################################
 
         if (do_roi):
             # Use region of interest
@@ -168,14 +188,17 @@ def process_image(raw_img,do_roi):
         else:
             print("doesnt do roi")
             try:
-                l1, l2, m1, m2 = draw_lanes_method1(processed_img, lines)
-                cv.line(resized_data, (l1[0], l1[1]), (l1[2], l1[3]), [0, 0, 255], 10)
-                cv.line(resized_data, (l2[0], l2[1]), (l2[2], l2[3]), [0, 0, 255], 10)
-                cv.imshow("processed image with hough lines", resized_data)
+                # l1, l2, m1, m2 = draw_lanes_method1(processed_img, lines)
+                # cv.line(resized_data, (l1[0], l1[1]), (l1[2], l1[3]), [0, 0, 255], 10)
+                # cv.line(resized_data, (l2[0], l2[1]), (l2[2], l2[3]), [0, 0, 255], 10)
+                # cv.imshow("processed image with hough lines", resized_data)
 
                 # draw_lanes_method2(processed_img, lines, [0,0,255], 10)
                 # print("11")
                 # cv.imshow("processed image with hough lines", resized_data)
+
+                draw_lanes_method3(resized_image, lines,color=[0,0,255],thickness=10)
+                cv.imshow("Draw Lanes Method 3",resized_image)
             except:
                 print("No line detected")
 

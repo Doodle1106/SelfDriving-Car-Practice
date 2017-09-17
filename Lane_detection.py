@@ -7,9 +7,10 @@ import time
 print ("press q to quit")
 
 #EDIT settings here
-real_time_flag = False
+real_time_flag = True
 do_roi = False
-image_name = '1.jpeg'
+image_name = '0.jpg'
+#image_name = '6.jpeg'
 ######################
 
 #process one single image and conduct BGR2GRAY, CANNY, GAUSSIAN BLUR

@@ -150,15 +150,16 @@ def process_image(raw_img,do_roi):
             lines = cv.HoughLinesP(processed_img, 1, np.pi / 180, 180, 20, 15)
             l1, l2, m1, m2 = draw_lanes(processed_img, lines)
             cv.line(processed_img, (l1[0], l1[1]), (l1[2], l1[3]), [0, 255, 0], 30)
-            cv.imshow("3 processed image with hought lines", processed_img)
+            cv.imshow("processed image with hough lines", processed_img)
         else:
             print("doesnt do roi")
             lines = cv.HoughLinesP(processed_img, 1, np.pi / 180, 180, 20, 15)
+
             try:
                 l1, l2, m1, m2 = draw_lanes(processed_img, lines)
                 cv.line(resized_data, (l1[0], l1[1]), (l1[2], l1[3]), [0, 0, 255], 10)
-                cv.imshow("3 processed image with hough lines", resized_data)
-                print('loop took {} seconds'.format(time.time() - last_time))
+                cv.line(resized_data, (l2[0], l2[1]), (l2[2], l2[3]), [0, 0, 255], 10)
+                cv.imshow("processed image with hough lines", resized_data)
             except:
                 print("No line detected")
 

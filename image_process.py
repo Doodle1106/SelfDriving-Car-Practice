@@ -8,8 +8,8 @@ def roi(img, vertices):
     masked = cv.bitwise_and(img, mask)
     return masked
 
-def draw_lanes(img, lines):
-    # if this fails, go with some default line
+def draw_lanes_method1(img, lines):
+
     try:
         #find the maximum y value and minimum y value
         ys = []
@@ -26,8 +26,11 @@ def draw_lanes(img, lines):
             for positions in line:
                 x_p = (positions[0], positions[2])
                 y_p = (positions[1], positions[3])
+                #print(np.vstack([x_p, np.ones(len(x_p))]))
                 A = np.vstack([x_p, np.ones(len(x_p))]).T
+                print(A)
                 m, b = np.linalg.lstsq(A, y_p)[0]
+                #print(m)
 
                 # Calculating our new, and improved, xs
                 x1 = (min_y - b) / m
@@ -90,57 +93,68 @@ def draw_lanes(img, lines):
         return [l1_x1, l1_y1, l1_x2, l1_y2], [l2_x1, l2_y1, l2_x2, l2_y2], lane1_id, lane2_id
 
     except Exception as e:
-        print(str(e))
+        print('cannot detect lanes')
 
-# def draw_lanes(image,lines,color,thickness):
-#     left_lines=[]
-#     right_lines=[]
-#     ys = []
-#
-#     for i in lines:
-#         for ii in i:
-#             ys += [ii[1], ii[3]]
-#     min_y = np.min(ys)
-#     max_y = np.max(ys)
-#     new_lines = []
-#     line_dict = {}
-#
-#     for line in lines:
-#         for x1,y1,x2,y2 in line:
-#             x_p = (x1,x2)
-#             y_p = (y1,y2)
-#             A = np.vstack([x_p, np.ones(len(x_p))]).T
-#             m, b = np.linalg.lstsq(A, y_p)[0]
-#
-#             if m <-0.5:
-#                 left_lines.append(line)
-#             elif m >0.5:
-#                 right_lines.append(line)
-#
-#             x1 = (min_y - b) / m
-#             x2 = (max_y - b) / m
-#
-#     if len(left_lines)>2:
-#         left_array = np.vstack(left_lines)
-#         # [0, 1, 2, 3]
-#         #[[x1,y1,x2,y2]
-#         # [x1,y1,x2,y2]
-#         # [x1,y1,x2,y2]]
-#         x1 = np.min(left_array[:0])
-#         x2 = np.max(left_array[:2])
-#         y1 = left_array[np.argmin(left_array[:, 0]), 1]
-#         y2 = left_array[np.argmin(left_array[:, 2]), 3]
-#     cv.line(image, (x1, y1), (x2, y2), color, thickness)
+def draw_lanes_method2(image,lines,color,thickness):
+    left_lines=[]
+    right_lines=[]
+    ys = []
+    for i in lines:
+        for ii in i:
+            ys += [ii[1], ii[3]]
+    min_y = np.min(ys)
+    max_y = np.max(ys)
+    new_lines = []
+    line_dict = {}
+    for line in lines:
+        for x1,y1,x2,y2 in line:
+            x_p = (x1,x2)
+            y_p = (y1,y2)
+            A = np.vstack([x_p, np.ones(len(x_p))]).T
+            m, b = np.linalg.lstsq(A, y_p)[0]
+            if m <-0.5:
+                left_lines.append(line)
+            elif m >0.5:
+                right_lines.append(line)
+            x1 = (min_y - b) / m
+            x2 = (max_y - b) / m
+        if len(left_lines)>1:
+            left_array = np.vstack(left_lines)
+            # [0, 1, 2, 3]
+            #[[x1,y1,x2,y2]
+            # [x1,y1,x2,y2]
+            # [x1,y1,x2,y2]]
+            x1 = np.min(left_array[:0])
+            x2 = np.max(left_array[:2])
+            y1 = left_array[np.argmin(left_array[:, 0]), 1]
+            y2 = left_array[np.argmin(left_array[:, 2]), 3]
+        cv.line(image, (x1, y1), (x2, y2), color, thickness)
+        if len(right_lines)>1:
+            right_array = np.vstack(right_lines)
+            # [0, 1, 2, 3]
+            #[[x1,y1,x2,y2]
+            # [x1,y1,x2,y2]
+            # [x1,y1,x2,y2]]
+            x1 = np.min(right_array[:0])
+            x2 = np.max(right_array[:2])
+            y1 = right_array[np.argmin(right_array[:, 0]), 1]
+            y2 = right_array[np.argmin(right_array[:, 2]), 3]
+        cv.line(image, (x1, y1), (x2, y2), color, thickness)
 
-last_time = time.time()
 def process_image(raw_img,do_roi):
         processed_img = cv.resize(raw_img, (600, 480))
+        # M = cv.getPerspectiveTransform(processed_img,dst)
+        # unwarped = cv.warpPerspective(processed_img,M,(600,480),flags=cv.INTER_LINEAR)
+        # cv.imshow('unwarped image',unwarped)
+
         resized_data = processed_img
         processed_img = cv.cvtColor(processed_img, cv.COLOR_BGR2GRAY)
         processed_img = cv.GaussianBlur(processed_img, (3, 3), 0)
         #cv.imshow("1 after GaussianBlur", processed_img)
-        processed_img = cv.Canny(processed_img, threshold1=200, threshold2=300)
+        processed_img = cv.Canny(processed_img, threshold1=150, threshold2=300)
         #cv.imshow("2 after Canny", processed_img)
+        lines = cv.HoughLinesP(processed_img, 1, np.pi / 180, 180, 20, 15)
+        #print(lines)
 
         if (do_roi):
             # Use region of interest
@@ -148,18 +162,20 @@ def process_image(raw_img,do_roi):
             vertices = np.array([[10, 500], [10, 300], [300, 200], [500, 200], [800, 300], [800, 500]], np.int32)
             processed_img = roi(processed_img, [vertices])
             lines = cv.HoughLinesP(processed_img, 1, np.pi / 180, 180, 20, 15)
-            l1, l2, m1, m2 = draw_lanes(processed_img, lines)
+            l1, l2, m1, m2 = draw_lanes_method1(processed_img, lines)
             cv.line(processed_img, (l1[0], l1[1]), (l1[2], l1[3]), [0, 255, 0], 30)
             cv.imshow("processed image with hough lines", processed_img)
         else:
             print("doesnt do roi")
-            lines = cv.HoughLinesP(processed_img, 1, np.pi / 180, 180, 20, 15)
-
             try:
-                l1, l2, m1, m2 = draw_lanes(processed_img, lines)
+                l1, l2, m1, m2 = draw_lanes_method1(processed_img, lines)
                 cv.line(resized_data, (l1[0], l1[1]), (l1[2], l1[3]), [0, 0, 255], 10)
                 cv.line(resized_data, (l2[0], l2[1]), (l2[2], l2[3]), [0, 0, 255], 10)
                 cv.imshow("processed image with hough lines", resized_data)
+
+                # draw_lanes_method2(processed_img, lines, [0,0,255], 10)
+                # print("11")
+                # cv.imshow("processed image with hough lines", resized_data)
             except:
                 print("No line detected")
 

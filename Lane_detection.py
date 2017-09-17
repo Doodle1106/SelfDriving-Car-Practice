@@ -7,9 +7,9 @@ import time
 print ("press q to quit")
 
 #EDIT settings here
-real_time_flag = True
+real_time_flag = False
 do_roi = False
-image_name = '2.jpeg'
+image_name = '1.jpeg'
 ######################
 
 #process one single image and conduct BGR2GRAY, CANNY, GAUSSIAN BLUR
@@ -28,7 +28,7 @@ def real_time_mode():
         last_time = time.time()
         screen = grab_screen(region=(0, 40, 800, 600))
         screen = cv.cvtColor(screen,cv.COLOR_BGR2RGB)
-        cv.imshow("Real time screendddddd",screen)
+        cv.imshow("Real time screen",screen)
         process_image(screen,do_roi)
         print('loop took {} seconds'.format(time.time() - last_time))
         if cv.waitKey(25) & 0xFF == ord('q'):
@@ -36,7 +36,6 @@ def real_time_mode():
             break
 
 def main():
-
     if (real_time_flag):
         real_time_mode()
     else:
